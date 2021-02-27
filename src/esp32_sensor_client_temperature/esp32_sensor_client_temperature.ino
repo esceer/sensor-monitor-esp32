@@ -89,10 +89,6 @@ String getSensorValue() {
 
 void sendSensorUpdate(String sensorValue) {
   String serverPath = SENSOR_DATA_WAREHOUSE_FQDN + "sensors/" + sensorId + "/state/" + sensorValue;
-  
-  Serial.println("??sendSensorUpdate serverPath");
-  Serial.println(serverPath);
-  
   sendHttpPutRequest(serverPath.c_str());
 }
 
@@ -131,8 +127,6 @@ void sendHttpPostRequest(const char* serverPath) {
 }
 
 void sendHttpPutRequest(const char* serverPath) {
-  Serial.println("??sendHttpPutRequest");
-  
   HTTPClient http;
   http.begin(serverPath);
   http.addHeader("Content-Type", "text/plain"); 
