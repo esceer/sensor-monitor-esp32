@@ -5,8 +5,8 @@
 // The below parameters are mandatory for this script and need to be provided prior to run!
 const char* WIFI_SSID = "<SSID>";
 const char* WIFI_PASSWORD = "<PASSWORD>";
-String SENSOR_NAME = "<SENSOR_NAME>";
-String SENSOR_DATA_WAREHOUSE_FQDN = "http://<HOST>:<PORT>/";
+String SENSOR_NAME = "portable_temperature_sensor";
+String SENSOR_DATA_WAREHOUSE_FQDN = "<FQDN>";
 
 // This represents the sensor id which comes from the server
 String sensorId;
