@@ -19,15 +19,15 @@ unsigned int MQTT_BROKER_PORT = 1883;
 const char* MQTT_TOPIC = "ehome/sensors";
 
 String SENSOR_DATA_WAREHOUSE_FQDN = "<FQDN>";
-String SENSOR_NAME = "portable_sensor";
+String SENSOR_NAME = "portable";
 String TEMPERATURE_SENSOR_NAME = SENSOR_NAME + "_temperature";
 String HUMIDITY_SENSOR_NAME = SENSOR_NAME + "_humidity";
 
 String DATA_PACK_SEPARATOR = "#";
 String KEY_VALUE_SEPARATOR = ":";
 
-// Set timer to 30 seconds
-unsigned int loopInterval = 30000;
+// Timer 
+unsigned int loopInterval = 10000;
 
 // MQTT
 WiFiClient wifiClient;
