@@ -14,14 +14,17 @@
 const char* WIFI_SSID = "<SSID>";
 const char* WIFI_PASSWORD = "<PASSWORD>";
 
-const char* MQTT_TOPIC = "<TOPIC>";
 const char* MQTT_BROKER_IP = "<IP_ADDRESS>";
 unsigned int MQTT_BROKER_PORT = 1883;
+const char* MQTT_TOPIC = "ehome/sensors";
 
 String SENSOR_DATA_WAREHOUSE_FQDN = "<FQDN>";
 String SENSOR_NAME = "portable_sensor";
 String TEMPERATURE_SENSOR_NAME = SENSOR_NAME + "_temperature";
 String HUMIDITY_SENSOR_NAME = SENSOR_NAME + "_humidity";
+
+String DATA_PACK_SEPARATOR = "#";
+String KEY_VALUE_SEPARATOR = ":";
 
 // Set timer to 30 seconds
 unsigned int loopInterval = 30000;
@@ -51,9 +54,11 @@ void loop() {
 }
 
 void sendSensorUpdate() {
-  String temperature = getTemperatureSensorValue();
-  String humidity = getHumiditySensorValue();
-  String msg = TEMPERATURE_SENSOR_NAME + ":" + temperature + ";" + HUMIDITY_SENSOR_NAME + ":" + humidity;
+  String temperatureValue = getTemperatureSensorValue();
+  String humidityValue = getHumiditySensorValue();
+  String msg = TEMPERATURE_SENSOR_NAME + KEY_VALUE_SEPARATOR + temperatureValue
+             + DATA_PACK_SEPARATOR
+             + HUMIDITY_SENSOR_NAME + KEY_VALUE_SEPARATOR + humidityValue;
   publishToMqtt(msg);
 }
 
