@@ -1,48 +1,124 @@
-#include <Ewifi.h>
-#include <Emqtt.h>
-#include <EthSensor.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Arduino_JSON.h>
 
-#define BUFFER_SIZE 50
+// MQTT
+#include <PubSubClient.h>
 
-Ewifi ewifi("<SSID>", "<PASSWORD>");
-Emqtt emqtt("<IP_ADDRESS>", 1883, "ehome/sensors", "portable_box");
-EthSensor sensor;
+// SENSOR
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
 
-const char* temperatureSensorName = "portable_box_temperature";
-const char* humiditySensorName = "portable_box_humidity";
+// The below parameters are mandatory for this script and need to be provided prior to run!
+const char* WIFI_SSID = "<SSID>";
+const char* WIFI_PASSWORD = "<PASSWORD>";
+
+const char* MQTT_BROKER_IP = "<IP_ADDRESS>";
+unsigned int MQTT_BROKER_PORT = 1883;
+const char* MQTT_TOPIC = "ehome/sensors";
+
+String SENSOR_DATA_WAREHOUSE_FQDN = "<FQDN>";
+String SENSOR_NAME = "portable";
+String TEMPERATURE_SENSOR_NAME = SENSOR_NAME + "_temperature";
+String HUMIDITY_SENSOR_NAME = SENSOR_NAME + "_humidity";
+
+String DATA_PACK_SEPARATOR = "#";
+String KEY_VALUE_SEPARATOR = ":";
 
 // Timer 
-unsigned int loopInterval = 5000;
+unsigned int loopInterval = 10000;
 
+// MQTT
+WiFiClient wifiClient;
+PubSubClient mqttClient(MQTT_BROKER_IP, MQTT_BROKER_PORT, wifiClient);
+
+// SENSOR
+#define SEALEVELPRESSURE_HPA (1013.25)
+Adafruit_BME280 bme; // I2C
 
 void setup() {
-  Serial.begin(115200);
-  sensor.connect();
-  ewifi.connect();
-  emqtt.connect();
+  Serial.begin(9600);
+  connectToWifi();
+  connectToMqttBroker();
+  connectToSensor();
 }
 
 void loop() {
-  if(!ewifi.isConnected()){
+  if(!isWifiConnected()){
     Serial.println("WiFi is disconnected");
-    ewifi.connect();
+    connectToWifi();
   }
-  sendSensorData();
+  sendSensorUpdate();
   delay(loopInterval);
 }
 
-void sendSensorData() {
-  const char* temperatureValue = sensor.getTemperatureValue();
-  const char* humidityValue = sensor.getHumidityValue();
-  
-  static char msg[BUFFER_SIZE];
-  strcpy(msg, temperatureSensorName);
-  strcat(msg, Emqtt::keyValueSeparator);
-  strcat(msg, temperatureValue);
-  strcat(msg, Emqtt::dataPackSeparator);
-  strcat(msg, humiditySensorName);
-  strcat(msg, Emqtt::keyValueSeparator);
-  strcat(msg, humidityValue);
+void sendSensorUpdate() {
+  String temperatureValue = getTemperatureSensorValue();
+  String humidityValue = getHumiditySensorValue();
+  String msg = TEMPERATURE_SENSOR_NAME + KEY_VALUE_SEPARATOR + temperatureValue
+             + DATA_PACK_SEPARATOR
+             + HUMIDITY_SENSOR_NAME + KEY_VALUE_SEPARATOR + humidityValue;
+  publishToMqtt(msg);
+}
 
-  emqtt.publish(msg);
+String getTemperatureSensorValue() {
+  float temperature = bme.readTemperature();
+  return convertFloatToString(temperature);
+}
+
+String getHumiditySensorValue() {
+  float humidity = bme.readHumidity();
+  return convertFloatToString(humidity);
+}
+
+String convertFloatToString(float value) {
+  // TODO: Out of memory because of String class in the long run?
+  return String(value);
+}
+
+void connectToWifi() {
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println("Connecting");
+  while(!isWifiConnected()) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+boolean isWifiConnected() {
+  return WiFi.status() == WL_CONNECTED;
+}
+
+boolean connectToMqttBroker() {
+  int retryCount = 12;
+  while (!mqttClient.connected() && retryCount-- > 0) {
+    Serial.print("Attempting MQTT connection");
+    if (mqttClient.connect(SENSOR_NAME.c_str())) {
+      Serial.println("");
+      Serial.println("Connected to MQTT broker");
+      return true;
+    } else {
+      Serial.print(".");
+      delay(5000);
+    }
+  }
+  return false;
+}
+
+void publishToMqtt(String message) {
+  if (!mqttClient.connected()) {
+    if (!connectToMqttBroker()) {
+      // Reset loop, might need to reconnect to wifi
+      return;
+    }
+  }
+  mqttClient.publish(MQTT_TOPIC, message.c_str());
+}
+
+void connectToSensor() {
+  bme.begin(0x76);
 }
