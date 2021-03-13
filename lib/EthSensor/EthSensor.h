@@ -11,7 +11,6 @@
 class EthSensor {
   private:
     Adafruit_BME280 bme;
-    const char* convertFloatToString(float value, char output[]);
 
   public:
     EthSensor();
